@@ -84,6 +84,86 @@ Execute the following command to start the agent:
 python app.py
 ```
 
+---
+
+## 🔧 WebNavigator Tool for Custom AI Integration
+
+The **WebNavigator** is a standalone tool that allows you to apply web navigation commands to your own AI. It exposes all browser automation capabilities as simple async methods that can be easily integrated with any AI system.
+
+### Quick Start
+
+```python
+from src.navigator import WebNavigator, NavigatorConfig
+import asyncio
+
+async def main():
+    # Create navigator with configuration
+    config = NavigatorConfig(
+        browser='chrome',  # or 'edge', 'firefox'
+        headless=False,    # Set True for headless mode
+        use_vision=False   # Set True to capture screenshots
+    )
+    
+    async with WebNavigator(config) as nav:
+        # Navigate to a website
+        await nav.goto("https://google.com")
+        
+        # Get the current page state (send this to your AI)
+        state = await nav.get_state()
+        print(state.to_prompt())  # Formatted for AI consumption
+        
+        # Execute commands based on AI response
+        await nav.click(index=5)
+        await nav.type(index=3, text="Hello World", press_enter=True)
+        await nav.scroll(direction='down')
+
+asyncio.run(main())
+```
+
+### Available Commands
+
+| Command | Description | Example |
+|---------|-------------|---------|
+| `goto(url)` | Navigate to URL | `await nav.goto("https://google.com")` |
+| `click(index)` | Click element | `await nav.click(index=5)` |
+| `type(index, text)` | Type in field | `await nav.type(index=3, text="Hello")` |
+| `scroll(direction)` | Scroll page | `await nav.scroll(direction='down')` |
+| `back()` | Go back | `await nav.back()` |
+| `forward()` | Go forward | `await nav.forward()` |
+| `press_key(keys)` | Press keys | `await nav.press_key("Enter")` |
+| `wait(seconds)` | Wait | `await nav.wait(3)` |
+| `scrape()` | Get content | `content = await nav.scrape()` |
+| `tab(mode)` | Manage tabs | `await nav.tab(mode='open')` |
+| `get_state()` | Get page state | `state = await nav.get_state()` |
+
+### AI Integration Pattern
+
+```python
+async with WebNavigator() as nav:
+    # Get tools description for AI system prompt
+    tools = await nav.get_tools_description()
+    
+    while not done:
+        # 1. Get current state
+        state = await nav.get_state()
+        
+        # 2. Send state to your AI
+        ai_response = your_ai.generate(
+            system_prompt=f"Use these tools:\n{tools}",
+            user_message=f"Task: {task}\nState:\n{state.to_prompt()}"
+        )
+        
+        # 3. Execute AI's command
+        result = await nav.execute_command(
+            ai_response['command'],
+            ai_response['params']
+        )
+```
+
+See `examples/navigator_example.py` for complete integration examples.
+
+---
+
 ## 🎥Demos
 
 **Prompt:** I want to know the price details of the RTX 4060 laptop gpu from varrious sellers from amazon.in
