@@ -11,15 +11,17 @@ from src.agent.web.browser.config import BrowserConfig
 from src.agent.web.browser import Browser
 from src.agent.web.context import Context
 from src.navigator.config import NavigatorConfig
-from src.navigator.views import NavigatorState, ElementInfo
+from src.navigator.views import NavigatorState
 from markdownify import markdownify
 from typing import Literal, Optional, List, Dict, Any
 from pathlib import Path
 from asyncio import sleep
 from os import getcwd
+import logging
 import httpx
 import asyncio
-import json
+
+logger = logging.getLogger(__name__)
 
 
 class WebNavigator:
@@ -117,7 +119,7 @@ class WebNavigator:
             if self.browser:
                 await self.browser.close_browser()
         except Exception as e:
-            print(f'Failed to close navigator: {e}')
+            logger.warning(f'Failed to close navigator: {e}')
         finally:
             self.context = None
             self.browser = None
@@ -534,6 +536,10 @@ class WebNavigator:
         
         This is a convenience method for using the navigator in synchronous code.
         
+        Note: This method may not work correctly in environments where an event
+        loop is already running (e.g., Jupyter notebooks, some web frameworks).
+        In such cases, use the async methods directly with `await`.
+        
         Args:
             coro: Async coroutine to run
         
@@ -542,6 +548,12 @@ class WebNavigator:
         """
         try:
             loop = asyncio.get_running_loop()
+            # If a loop is running, we can't use run_until_complete
+            # Warn the user
+            logger.warning(
+                "An event loop is already running. run_sync may not work correctly. "
+                "Consider using async methods directly with 'await'."
+            )
         except RuntimeError:
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
